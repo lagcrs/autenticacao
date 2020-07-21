@@ -1,5 +1,14 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const authConfig = require('../config/auth.json');
+
+generateToken = ( params = {} ) => (
+    //passar informacao unica, hash unico do token e tempo de expiracao
+    jwt.sign(params, authConfig.secret, {
+        expiresIn: 86400
+    })
+)
 
 module.exports = {
     async auth(req, res){
@@ -15,6 +24,12 @@ module.exports = {
         //senhas não iguais
         if(!await bcrypt.compare(password, user.password)) return res.status(400).send({ error: 'Invalid password' });
 
+        user.password = undefined;
+
+        res.send({ 
+            user, 
+            token: generateToken({ id: user.id }) 
+        });
     },
 
     async store(req, res){
@@ -27,7 +42,10 @@ module.exports = {
 
             user.password = undefined;
 
-            return res.json(user);
+            return res.send({ 
+                user, 
+                token: generateToken({ id: user.id }) 
+            });
 
         } catch(err) {
 
